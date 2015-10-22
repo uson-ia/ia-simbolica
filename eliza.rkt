@@ -3,8 +3,8 @@
 (provide pat-match)
 (provide atom?)
 
-(define fail nul)
-(define no-bindings '(#t . #t)')
+(define fail null)
+(define no-bindings '((#t . #t)))
 
 (define (atom? x)
   (and (not (null? x))
@@ -16,14 +16,22 @@
       (and (simple-equal (first x) (first y))
            (simple-equal (rest x) (rest y)))))
 
-(define (pat-match pattern input)
- (if (variable-p pattern)
-   ;#t
-   (list (cons patter input))
-   (if (or (atom? pattern) (atom? input))
-       (equal? pattern input)
-       (append (pat-match (first pattern) (first input))
-            (pat-match (rest pattern) (rest input))))))
+(define (pat-match pattern input (bindings no-bindings))
+  (cond ((eq? bindings fail) fail)
+        ((variable-p pattern)
+         (match-variable pattern input bindings))
+        ((eqv? pattern input) bindings)
+        ((and (cons? pattern) (cons? input))
+         (pat-match (rest pattern) (rest input)
+                    (pat-match (first pattern) (first input)
+                                bindings)))
+        (#t fail)))
+
+(define (match-variable var input bindings)
+    (let ((binding (get-binding var bindings)))
+        (cond ((not binding) (extend-bindings var input bindings))
+              ((equal? input (binding-val binding)) bindings)
+              (#t fail))))
 
 ; Devuelve True si x es '(?X)
 (define (variable-p x)
