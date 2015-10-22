@@ -12,8 +12,15 @@
 
 (define (pat-match pattern input)
  (if (variable-p pattern)
-   #t
+   ;#t
+   (list (cons patter input))
    (if (or (atom? pattern) (atom? input))
        (equal? pattern input)
-       (and (pat-match (first pattern) (first input))
+       (append (pat-match (first pattern) (first input))
             (pat-match (rest pattern) (rest input))))))
+
+; Devuelve True si x es '(?X)
+(define (variable-p x)
+  (and (list? x)
+       (equal? (length x) 1)
+       (equal? (string-ref (symbol->string (first x)) 0) #\?)))
