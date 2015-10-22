@@ -9,3 +9,11 @@
       (equal? x y )
       (and (simple-equal (first x) (first y))
            (simple-equal (rest x) (rest y)))))
+
+(define (pat-match pattern input)
+ (if (variable-p pattern)
+   #t
+   (if (or (atom? pattern) (atom? input))
+       (equal? pattern input)
+       (and (pat-match (first pattern) (first input))
+            (pat-match (rest pattern) (rest input))))))
