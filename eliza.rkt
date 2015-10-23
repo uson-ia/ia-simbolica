@@ -54,4 +54,7 @@
 
 ; Agrega el par var val a la lista de pares bindings
 (define (extend-bindings var val bindings)
- (cons (cons var val) bindings))
+ (cons (cons var val)
+       (if (eq? bindings no-bindings)
+            null
+            bindings)))
