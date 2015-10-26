@@ -1,0 +1,2 @@
+# Documentación
+## Inteligencia Artificial simbólica 
