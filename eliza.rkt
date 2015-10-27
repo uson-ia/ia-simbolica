@@ -1,14 +1,13 @@
 #lang racket
 
 (provide pat-match)
-(provide atom?)
 
-(define fail null)
+(define fail 'fail)
 (define no-bindings '((#t . #t)))
 
 (define (atom? x)
-  (and (not (null? x))
-       (not (pair? x))))
+  ;(and (not (null? x))
+       (not (pair? x)))
 
 (define (simple-equal x y)
   (if (or (atom? x) (atom? y))
@@ -33,12 +32,9 @@
               ((equal? input (binding-val binding)) bindings)
               (#t fail))))
 
-; Devuelve True si x es '(?X)
 (define (variable-p x)
-  (and (list? x)
-       (equal? (length x) 1)
-       (equal? (string-ref (symbol->string (first x)) 0) #\?)))
-
+  (and (symbol? x)
+       (char=? (string-ref (symbol->string x) 0) #\?)))
 
 ; Asocia var con su valor (lo busca en bindings)
 (define (get-binding var bindings)
