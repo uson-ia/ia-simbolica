@@ -21,8 +21,8 @@
          (match-variable pattern input bindings))
         ((eqv? pattern input) bindings)
         ((and (cons? pattern) (cons? input))
-         (pat-match (rest pattern) (rest input)
-                    (pat-match (first pattern) (first input)
+         (pat-match (cdr pattern) (cdr input)
+                    (pat-match (car pattern) (car input)
                                 bindings)))
         (#t fail)))
 
@@ -54,3 +54,7 @@
        (if (eq? bindings no-bindings)
             null
             bindings)))
+
+;(pat-match '(?X + ?X) '((2 + 2) + (2 + 2)))
+(pat-match '(?P need . ?X) '(i need a long vacation))
+;(pat-match '((?* ?p) need '(?* ?)) '(Mr Hulot and I need a vacation))
