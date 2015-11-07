@@ -1,7 +1,6 @@
 #lang racket
 
 (provide pat-match)
-(provide position)
 
 (define fail 'fail)
 (define no-bindings '((#t . #t)))
@@ -10,17 +9,11 @@
   ;(and (not (null? x))
        (not (pair? x)))
 
-(define (simple-equal x y)
-  (if (or (atom? x) (atom? y))
-      (equal? x y )
-      (and (simple-equal (first x) (first y))
-           (simple-equal (rest x) (rest y)))))
-
 (define (pat-match pattern input (bindings no-bindings))
   (cond ((eq? bindings fail) fail)
         ((variable-p pattern)
          (match-variable pattern input bindings))
-        ((eqv? pattern input) bindings)
+        ((equal? pattern input) bindings)
         ((segment-pattern? pattern)
          (segment-match pattern input bindings))
         ((and (cons? pattern) (cons? input))
@@ -37,10 +30,13 @@
           (let ((pos (position (car pat) input start)))
             (if (null? pos)
                 fail
-                (let ((b2 (pat-match pat (subseq input pos) bindings)))
+                (let ((b2 (pat-match
+                            pat (subseq input pos)
+                            (match-variable var (subseq input 0 pos)
+                                            bindings))))
                     (if (eq? b2 fail)
                         (segment-match pattern input bindings (+ pos 1))
-                        (match-variable var (subseq input 0 pos) b2))))))))
+                        b2)))))))
 
 (define (subseq l offset (n (length l)))
   (if (and (< offset n) (>= offset 0) (< offset (length l)) (<= n (length l)) (>= n 0))
@@ -50,14 +46,10 @@
       #f))
 
 (define (position item list start)
-    (define (pos item list)
-        (when (and (not (null? list)))
-            (cond
-                ((eqv? (car list) item) 0)
-                (else (add1 (pos item (cdr list)))))))
-    (let ((posi (pos item list)))
-        (cond ((>= start (length list)) #f)
-            (else posi))))
+    (cond
+        ((or (> start (length list)) (null? (drop list start))) #f)
+        ( (eqv? (car (drop list start)) item) start)
+          (else (position item list (add1 start) ) )))
 
 (define (segment-pattern? pattern)
   (and (cons? pattern)
@@ -95,7 +87,35 @@
             null
             bindings)))
 
-;(pat-match '(?X + ?X) '((2 + 2) + (2 + 2)))
-;(pat-match '(?P need . ?X) '(i need a long vacation))
-;(pat-match '((?* ?x) a b (?*?x)) '(1 2 a b a b 1 2 a b))
-;(pat-match '((?* ?p) need '(?* ?)) '(Mr Hulot and I need a vacation))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;    RUNNING BOOK EXAMPLES    ;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(displayln "--------  Running examples: --------")
+
+(displayln "(pat-match '(?X + ?X) '((2 + 2) + (2 + 2)))")
+(display "Result >> ")
+(pat-match '(?X + ?X) '((2 + 2) + (2 + 2)))
+(displayln "")
+
+(displayln "(?P need . ?X) '(i need a long vacation)")
+(display "Result >> ")
+(pat-match '(?P need . ?X) '(i need a long vacation))
+(displayln "")
+
+(displayln "((?* ?p) need (?* ?x)) '(Mr Hulot and I need a vacation)")
+(display "Result >> ")
+(pat-match '((?* ?p) need (?* ?x)) '(Mr Hulot and I need a vacation))
+(displayln "")
+
+(displayln "((?* ?x) is (?* ?y)) '(what he is is a fool)")
+(display "Result >> ")
+(pat-match '((?* ?x) is (?* ?y)) '(what he is is a fool))
+(displayln "")
+
+
+(displayln "((?* ?x) a b (?* ?x)) '(1 2 a b a b 1 2 a b)")
+(display "Result >> ")
+(pat-match '((?* ?x) a b (?* ?x)) '(1 2 a b a b 1 2 a b))
+(displayln "")
