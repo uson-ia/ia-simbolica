@@ -52,3 +52,10 @@
     ((?x* % more than ?y*)  (* ?y (/ (+ 100 ?x) 100)))
     ((?x* % ?y*)            (* (/ ?x 100) ?y)))))
 
+;;;; la funcion principal de Student 
+;;;; elimina palabras que no tienen contenido
+(defun student (words)
+  "Solve certain Algebra Word Problems."
+  (solve-equations
+    (create-list-of-equations
+      (translate-to-expression (remove-if #'noise-word-p words)))))
