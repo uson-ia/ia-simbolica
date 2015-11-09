@@ -1,9 +1,13 @@
 #lang racket
 
 (provide pat-match)
+(provide eliza)
 
 (define fail 'fail)
 (define no-bindings '((#t . #t)))
+
+(define (rule-pattern rule) (car rule))
+(define (rule-respone rule) (cdr rule))
 
 (define (atom? x)
   ;(and (not (null? x))
@@ -45,6 +49,12 @@
        (Do you often feel ?y ?))
       (((?* ?x) I felt (?* ?y))
        (What other feelings do you have?))))
+
+(define (switch-viewpoint words)
+    (sublis '((I . you) (you . I) (me . you) (am . are)) words))
+
+(define (raldonm-elt choices)
+    (sequence-ref choices (random (length choices))))
 
 (define (sublis pairs input)
     (if (null? (cdr pairs))
