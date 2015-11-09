@@ -75,3 +75,19 @@
   "Translate the value part of the pair into an equation or expression."
   (cons (binding-var pair)
         (translate-to-expression (binding-val pair))))
+;;; toma una expresion y lo separa en uina lista de ecuaciones
+(defun create-list-of-equations (exp)
+  "Separate out equations embedded in nested parens."
+  (cond ((null exp) nil)
+        ((atom (first exp)) (list exp))
+        (t (append (create-list-of-equations (first exp))
+                   (create-list-of-equations (rest exp))))))
+
+;;; crea una variable que representa una lista de de palabras 
+(defun make-variable (words)
+  "Create a variable name based on the given list of words"
+  (first words))
+
+(defun noise-word-p (word)
+  "Is this a low-content word which can be safely ignored?"
+  (member word '(a an the this number of $)))
