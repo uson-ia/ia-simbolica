@@ -59,3 +59,19 @@
   (solve-equations
     (create-list-of-equations
       (translate-to-expression (remove-if #'noise-word-p words)))))
+
+;;;encuentra una regla en student_rule para transformar la entrada
+(defun translate-to-expression (words)
+  "Translate an English phrase into an equation or expression."
+  (or (rule-based-translator
+        words *student-rules*
+        :rule-if #'rule-pattern :rule-then #'rule-response
+        :action #'(lambda (bindings response)
+                    (sublis (mapcar #'translate-pair bindings)
+                              response)))
+      (make-variable words)))
+;;;toma una variable  o valor y lo traduce
+(defun translate-pair (pair)
+  "Translate the value part of the pair into an equation or expression."
+  (cons (binding-var pair)
+        (translate-to-expression (binding-val pair))))
