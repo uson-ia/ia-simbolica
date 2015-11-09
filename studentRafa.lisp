@@ -91,3 +91,23 @@
 (defun noise-word-p (word)
   "Is this a low-content word which can be safely ignored?"
   (member word '(a an the this number of $)))
+
+(defun solve-equations (equations)
+  "Print the equations and their solution"
+  (print-equations "The equations to be solved are:" equations)
+  (print-equations "The solution is:" (solve equations nil)))
+
+(defun solve (equations known)
+  "Solve a system of equations by constraint propagation."
+  ;;trata de resolver para una ecuacion y sustituir su valor en otro
+  ;;si no funciona regresa lo que conoce
+  (or (some #'(lambda (equation)
+                (let ((x (one-unknown equation)))
+                  (when x
+                    (let ((answer (solve-arithmetic
+                   (isolate equation x))))
+                      (solve (subst (exp-rhs answer) (exp-lhs answer)
+                                    (remove equation equations))
+                             (cons answer known))))))
+            equations)
+      known))
