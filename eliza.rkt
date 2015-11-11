@@ -7,7 +7,7 @@
 (define no-bindings '((#t . #t)))
 
 (define (rule-pattern rule) (car rule))
-(define (rule-respone rule) (cdr rule))
+(define (rule-response rule) (cdr rule))
 
 (define (atom? x)
   ;(and (not (null? x))
@@ -27,8 +27,10 @@
         (#t fail)))
 
 (define (eliza)
-    (print "Eliza >> ")
-    (write (flatten (use-eliza-rules (read)))))
+    (displayln "")
+    (print "Eliza:")
+    (write (flatten (use-eliza-rules (read))))
+    (eliza))
 
 (define *eliza-rules*
     '((((?* ?x) hello (?* ?y))
@@ -50,10 +52,21 @@
       (((?* ?x) I felt (?* ?y))
        (What other feelings do you have?))))
 
+(define (use-eliza-rules input)
+    (for/or ((i *eliza-rules*))
+        (foo i input)))
+
+(define (foo rule input)
+    (let ((result (pat-match (rule-pattern rule) input)))
+        (if (not (eq? result fail))
+            (sublis (switch-viewpoint result)
+                    (random-elt (rule-response rule)))
+            #f)))
+
 (define (switch-viewpoint words)
     (sublis '((I . you) (you . I) (me . you) (am . are)) words))
 
-(define (raldonm-elt choices)
+(define (random-elt choices)
     (sequence-ref choices (random (length choices))))
 
 (define (sublis pairs input)
@@ -72,7 +85,7 @@
       (if (null? pat)
           (match-variable var input bindings)
           (let ((pos (position (car pat) input start)))
-            (if (null? pos)
+            (if (false? pos)
                 fail
                 (let ((b2 (pat-match
                             pat (subseq input pos)
@@ -163,3 +176,5 @@
 (display "Result >> ")
 (pat-match '((?* ?x) a b (?* ?x)) '(1 2 a b a b 1 2 a b))
 (displayln "")
+
+(eliza)
