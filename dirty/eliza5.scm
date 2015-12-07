@@ -3,14 +3,17 @@
 ;;;
 ;;; Norvig's PAIP chapter 5 translated to R7RS Scheme
 
-;;;;;;;;;;;;;;;;;;;;;;;
-;; ELIZA4	     ;;
-;; segment variables ;;
-;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ELIZA5	         ;;
+;; Rule-based translator ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (import (scheme base)
 	(scheme load)
-	(scheme write))
+	(scheme write)
+	(scheme read)
+	(scheme cxr)
+	(srfi 27))
 
 
 ;;;
@@ -169,72 +172,77 @@
 	((bindings-find bindings tree) => binding-value)
 	(else tree)))
 
+(define (rule-pattern rule)
+  (car rule))
 
-;;;;;;;;;;;;;;;;;;;;
-;; TESTING ELIZA4 ;;
-;;;;;;;;;;;;;;;;;;;;
+(define (rule-responses rule)
+  (cdr rule))
 
-(load "./tester.scm")
+(define *eliza-rules*
+  '((((?* ?x) hello (?* ?y))
+     (How do you. Please state your problem.))
+    (((?* ?x) I want (?* ?y))
+     (What would it mean if you got ?y)
+     (Why do you want ?y)
+     (Suppose you got ?y soon))
+    (((?* ?x) if (?* ?y))
+     (Do you really think its likely that ?y)
+     (Do you wish that ?y)
+     (What do you think about ?y)
+     (Really -- if ?y))
+    (((?* ?x) no (?* ?y))
+     (Why not?)
+     (You are being a bit negative)
+     (Are you saying "NO" just to be negative?))
+    (((?* ?x) I was (?* ?y))
+     (Were you really?)
+     (Perhaps I already knew you were ?y)
+     (Why do you tell me you were ?y now?))
+    (((?* ?x) I feel (?* ?y))
+     (Do you often feel ?y ?))
+    (((?* ?x) I felt (?* ?y))
+     (What other feelings do you have?))))
 
-(tester
- "No segment variables"
+(define (eliza)
+  (let loop ((i 0))
+    (display "\neliza[")
+    (display i)
+    (display "] > ")
+    (display (flatten (use-eliza-rules (read))))
+    (loop (+ i 1))))
 
- (test/equal "Single simple successful match"
-	     (pattern-match '(i need a ?X) '(i need a vacation))
-	     '((?X . vacation)))
+(define (substitute-list alist tree)
+  ;; Make a tree with the value substitutions described by alist
+  (cond ((null? tree) '())
+	((pair? tree) (cons (substitute-list alist (car tree))
+			    (substitute-list alist (cdr tree))))
+	((assoc tree alist) => cdr)
+	(else tree)))
 
- (test/equal "Single simple match instantiation"
-	     (bindings-instantiate (pattern-match '(i need a ?X) '(i need a vacation))
-				   '(what would it mean to you if you got a ?X ?))
-	     '(what would it mean to you if you got a vacation ?))
+(define (some pred lst)
+  (cond ((null? lst) '(no rules available))
+	((pred (car lst)) => (lambda (x) x))
+	(else (some pred (cdr lst)))))
 
- (test/equal "Single simple failed match"
-	     (pattern-match '(i need a ?X) '(i really need a vacation))
-	     fail)
+(define (use-eliza-rules input)
+  (some (lambda (rule)
+	  (let ((result (pattern-match (rule-pattern rule) input)))
+	    (if (not (failure? result))
+		(substitute-list (switch-viewpoint result)
+				 (random-elt (rule-responses rule)))
+		#f)))
+	*eliza-rules*))
 
- (test/equal "All match no bindings"
-	     (pattern-match '(this is easy) '(this is easy))
-	     '())
+(define (switch-viewpoint words)
+  (substitute-list '((I . you) (you . I) (me . you) (am . are))
+		   words))
 
- (test/equal "Single compound failed match"
-	     (pattern-match '(?X is ?X) '((+ 2 2) is 4))
-	     fail)
+(define (flatten lst)
+  (apply append (map mklist lst)))
 
- (test/equal "Single compound successful match"
-	     (pattern-match '(?X is ?X) '((+ 2 2) is (+ 2 2)))
-	     '((?X + 2 2)))
+(define (mklist x)
+  (if (list? x) x (list x)))
 
- (test/equal "Multiple compound and rest successful matches"
-	     (pattern-match '(?P need . ?X) '(i need a long vacation))
-	     '((?X a long vacation) (?P . i))))
+(define (random-elt choices)
+  (list-ref choices (random-integer (length choices))))
 
-(tester
- "With segment variables"
-
- (test/equal "Single segment variable successful match in the begining"
-	     (pattern-match '((?* ?X) is my name) '(Eduardo Acuña Yeomans is my name))
-	     '((?X Eduardo Acuña Yeomans)))
-
- (test/equal "Single segment variable successful match in the end"
-	     (pattern-match '(my name is (?* ?X)) '(my name is Eduardo Acuña Yeomans))
-	     '((?X Eduardo Acuña Yeomans)))
-
- (test/equal "Single segment variable successful match in the middle"
-	     (pattern-match '(I love (?* ?P) so much) '(I love programming in Scheme so much))
-	     '((?P programming in Scheme)))
-
- (test/equal "One segment and one simple variable successful match"
-	     (pattern-match '((?* ?P) need a ?X) '(Mr Hulot and I need a vacation))
-	     '((?X . vacation) (?P Mr Hulot and I)))
-
- (test/equal "Multiple segment variables successful matches"
-	     (pattern-match '((?* ?P) need (?* ?X)) '(Mr Hulot and I need a vacation))
-	     '((?X a vacation) (?P Mr Hulot and I)))
-
- (test/equal "Single segment fail successful match"
-	     (pattern-match '((?* ?X) is a (?* ?Y)) '(what he is is a fool))
-	     '((?Y fool) (?X what he is)))
-
- (test/equal "Multiple segment fails with repeated segment successful match"
-	     (pattern-match '((?* ?X) a b (?* ?X)) '(1 2 a b a b 1 2 a b))
-	     '((?X 1 2 a b))))
